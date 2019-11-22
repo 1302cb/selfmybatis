@@ -156,7 +156,7 @@ public class SQLParserTest {
         logger.info("list-->"+list.toString());
         Map<String,Set<String>> map = SQLUtil.parseSQLFromSQL(list);
         logger.info("map-->");
-        SQLUtil.writeToExcel("/Users/it00002772/sql/sql.xls",map);
+        SQLUtil.writeToText("/Users/it00002772/sql/sql.txt",map);
     }
 
     @Test

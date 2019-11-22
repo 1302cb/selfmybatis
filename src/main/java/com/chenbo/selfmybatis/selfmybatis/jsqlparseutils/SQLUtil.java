@@ -153,7 +153,13 @@ public class SQLUtil {
         for (int i = 0; i < len; i++) {
             //三种情况下可以得到表名
             if ("FROM".equals(strings[i].toUpperCase())||"INTO".equals(strings[i].toUpperCase())||"UPDATE".equals(strings[i].toUpperCase())) {
-                return strings[i + 1];
+                if(!isAlpha(strings[i+1].charAt(0))){
+                    return "";
+                }
+                if(strings[i+1].contains("(")){
+                    return strings[i+1].substring(0,strings[i+1].indexOf("("));
+                }
+                return strings[i+1];
             }
         }
         return "";
@@ -172,6 +178,12 @@ public class SQLUtil {
         return true;
     }
 
+    /*
+    判断是否为字符
+     */
+    public static boolean isAlpha(char ch){
+        return (ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z');
+    }
     /*
     强制解析，碰到数字和字符串直接转换
      */
@@ -254,6 +266,9 @@ public class SQLUtil {
         Map<String,Set<String>> map = new HashMap<>();
         for(int i=0;i<len;i++){
             String sql = list.get(i);
+            if(sql.contains("@@")){
+                continue;
+            }
             String tableName = getTableName(sql);
             if(tableName!=null){
                 if(map.get(tableName)==null){
@@ -309,6 +324,42 @@ public class SQLUtil {
                 }
             }
         }
+    }
+    /*
+    将表分好的map，按照地址存放到txt里面去
+     */
+    public static void writeToText(String address,Map<String,Set<String>> map) throws IOException {
+        FileOutputStream file = null;
+        try {
+            file = new FileOutputStream(address);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        assert file != null;
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(file));
+        for (String key:map.keySet()){
+            Set<String> set = map.get(key);
+            if(key.length()<=3){
+                continue;
+            }
+            writer.write(key);
+            writer.newLine();
+            for(String value:set){
+                //长度小于3的默认为空
+                if(value.length()>3){
+                    writer.write(value);
+                    writer.newLine();
+                }
+            }
+            writer.newLine();
+            writer.newLine();
+        }
+        writer.flush();
+        writer.close();
+    }
 
+    public static void main(String[] args) {
+        char ch = 'Z';
+        logger.info(""+isAlpha(ch));
     }
 }
