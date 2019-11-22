@@ -2,6 +2,7 @@ package com.chenbo.selfmybatis.selfmybatis;
 
 import com.chenbo.selfmybatis.selfmybatis.jsqlparseutils.ParseSQL;
 import com.chenbo.selfmybatis.selfmybatis.jsqlparseutils.SQLParserProcessor;
+import com.chenbo.selfmybatis.selfmybatis.jsqlparseutils.SQLUtil;
 import com.chenbo.selfmybatis.selfmybatis.jsqlparseutils.oprate.DeleteParser;
 import com.chenbo.selfmybatis.selfmybatis.jsqlparseutils.oprate.InsertParser;
 import com.chenbo.selfmybatis.selfmybatis.jsqlparseutils.oprate.SelectParser;
@@ -18,7 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.io.StringReader;
+import java.io.*;
+import java.util.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 public class SQLParserTest {
@@ -26,9 +28,8 @@ public class SQLParserTest {
     private static Logger logger = LoggerFactory.getLogger(SQLParserTest.class);
 
 
-
     @Test
-    public void testFirst(){
+    public void testFirst() {
         String inStr = "SELECT comment_id, parent_id, student_id, content, pid\n" +
                 "\t, is_delete, is_admin, create_time, like_count\n" +
                 "FROM ep_sub_course_comment\n" +
@@ -59,7 +60,7 @@ public class SQLParserTest {
 //        String res = new SelectParser().parse(inStr,"?");
 //
 //        logger.info("result-->"+res);
-        Statement statement  = null;
+        Statement statement = null;
         try {
             statement = CCJSqlParserUtil.parse(new StringReader(inStr));
         } catch (JSQLParserException e) {
@@ -67,9 +68,10 @@ public class SQLParserTest {
         }
         String res = statement.toString();
         String parttern = "'.'";
-        res = res.replaceAll(parttern,"?");
-        logger.info("result-->"+res);
+        res = res.replaceAll(parttern, "?");
+        logger.info("result-->" + res);
     }
+
     @Test
     public void testUnion() throws JSQLParserException {
         String sql = "(select name from Student natural join Math where class=\"A\" and sex=\"women\" order by score desc)\n" +
@@ -78,15 +80,15 @@ public class SQLParserTest {
         String res = CCJSqlParserUtil.parse(new StringReader(sql)).toString();
         String[] temp = res.split("UNION");
         String[] strings = new String[temp.length];
-        for(int i=0;i<strings.length;i++){
+        for (int i = 0; i < strings.length; i++) {
             temp[i] = temp[i].trim();
-            strings[i] = temp[i].substring(1,temp[i].length()-1);
-            logger.info("strings-->"+strings[i]);
+            strings[i] = temp[i].substring(1, temp[i].length() - 1);
+            logger.info("strings-->" + strings[i]);
         }
     }
 
     @Test
-    public void test1(){
+    public void test1() {
         String sql = "SELECT id, course_id, title, short_desc, course_desc\n" +
                 "\t, price, care_bean_price, origin_price, large_image, medium_image\n" +
                 "\t, small_image, mini_image, share_image, author_id, create_time\n" +
@@ -96,53 +98,124 @@ public class SQLParserTest {
                 "WHERE course_id = 'c8251accc9634f3185d7309fd92c661b'\n" +
                 "\tAND is_deleted = 0\n" +
                 "\tAND on_sale = 1\n";
-        String res = new SelectParser().parse(sql,"?");
+        String res = new SelectParser().parse(sql, "?");
 
-        logger.info("result-->"+res);
+        logger.info("result-->" + res);
     }
 
     @Test
-    public void test2(){
+    public void test2() {
         String sql = "SELECT resourceid, student_id, potential_label_type, performance_score, stat_week_time\n" +
                 "\t, answers_score\n" +
                 "FROM ep_potential_week_student_score\n" +
                 "WHERE stat_week_time = 20191118\n" +
                 "\tAND student_id = '1b7fdf58d88b4bae80b651a10ac82c30'\n" +
                 "\tAND is_deleted = 0";
-        String res = new SelectParser().parse(sql,"?");
+        String res = new SelectParser().parse(sql, "?");
 
-        logger.info("result-->"+res);
+        logger.info("result-->" + res);
     }
 
     @Test
-    public void testSelect(){
+    public void testSelect() {
         String str = "select name from Student natural join Math where class=\"A\" and sex=\"women\" order by score desc;";
-        String res = new SelectParser().parse(str,"?");
-
-        logger.info("result-->"+res);
+        String temp = "SELECT account_id, grade, expire_time FROM ep_im_account WHERE account_id in() AND isDeleted = 0";
+        String res = new SelectParser().parse(temp, "?");
+        logger.info("result-->" + res);
     }
 
     @Test
-    public void testInsert(){
+    public void testInsert() {
         String sql = "insert into Student(ID,name,class) values(10152510302,\"Tom\",\"class 1\");";
-        String res = new InsertParser().parse(sql,"?");
+        String res = new InsertParser().parse(sql, "?");
 
-        logger.info("result-->"+res);
+        logger.info("result-->" + res);
     }
 
     @Test
-    public void testDelete(){
+    public void testDelete() {
         String sql = "delete from tb_table where id = 3";
-        String res = new DeleteParser().parse(sql,"?");
+        String res = new DeleteParser().parse(sql, "?");
 
-        logger.info("result-->"+res);
+        logger.info("result-->" + res);
     }
 
     @Test
-    public void testUpdate(){
+    public void testUpdate() {
         String sql = "update Student set age=18 where name=\"Tom\";";
-        String res = new UpdateParser().parse(sql,"?");
+//        String sql = "SELECT account_id, grade, expire_time FROM ep_im_account WHERE account_id in() AND isDeleted = 0";
+        String res = new UpdateParser().parse(sql, "?");
 
-        logger.info("result-->"+res);
+        logger.info("result-->" + res);
+    }
+
+    @Test
+    public void testBufferedReader() throws IOException {
+        String address = "/Users/it00002772/sql.txt";
+        List<String> list = SQLUtil.readLineFromAddress(address);
+        logger.info("list-->"+list.toString());
+        Map<String,Set<String>> map = SQLUtil.parseSQLFromSQL(list);
+        logger.info("map-->");
+        SQLUtil.writeToExcel("/Users/it00002772/sql/sql.xls",map);
+    }
+
+    @Test
+    public void testCode() {
+
+//
+//        遍历塞入不同的表里面
+//        while ((temp = bufferedReader.readLine()) != null) {
+//            logger.info("len-->" + (++len));
+//            logger.info("res-->" + SQLUtil.forceParse(temp, "?"));
+//            String tableName = SQLUtil.getTableName(temp);
+//            logger.info("tan-->" + tableName);
+//            if (map.get(tableName) == null) {
+//                Set<String> set = new HashSet<>();
+//                set.add(SQLUtil.forceParse(temp, "?"));
+//                map.put(tableName, set);
+//            } else {
+//                Set<String> set = map.get(tableName);
+//                set.add(SQLUtil.forceParse(temp, "?"));
+//                map.put(tableName, set);
+//            }
+//        }
+//        bufferedReader.close();
+//        logger.info("map-->" + map);
+//        FileOutputStream fileOutputStream = new FileOutputStream("/Users/it00002772/sql/sql.csv");
+//        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(fileOutputStream), 1024);
+//        bufferedWriter.write("表名" + "," + "sql语句");
+//        bufferedWriter.newLine();
+//        for (String key : map.keySet()) {
+//            Set<String> set = map.get(key);
+//            for (String value : set) {
+//                logger.info("value-->" + value);
+//                bufferedWriter.write(key + "," + value);
+//                bufferedWriter.newLine();
+//            }
+//        }
+//
+//        for (String key : map.keySet()) {
+//            FileWriter writer = new FileWriter("/Users/it00002772/sql/" + key + ".txt");
+//            Set<String> values = map.get(key);
+//            logger.info("set-->" + values);
+//            for (String value : values) {
+//                writer.write(value + "\n");
+//            }
+//            writer.close();
+//        }
+    }
+
+    @Test
+    public void testSpacial() {
+
+        String sql = "SELECT account_id, grade, expire_time FROM ep_im_account WHERE account_id in() AND isDeleted = 0;";
+        Statement statement = null;
+        try {
+            statement = CCJSqlParserUtil.parse(new StringReader(sql));
+        } catch (JSQLParserException e) {
+            e.printStackTrace();
+        }
+//        PlainSelect select = (PlainSelect) ((Select) statement).getSelectBody();
+        logger.info("result->" + statement.toString());
     }
 }
